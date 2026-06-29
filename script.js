@@ -1,4 +1,9 @@
 document.addEventListener('DOMContentLoaded', () => {
+    // --- 新增：初始化 Supabase 客戶端 ---
+    const SUPABASE_URL = 'https://gmvxtxbuttamttqztmif.supabase.co/rest/v1/';
+    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imdtdnh0eGJ1dHRhbXR0cXp0bWlmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI3MzMyNzAsImV4cCI6MjA5ODMwOTI3MH0.XIrhRTg-Y2iCeuvy3qVhYRijL6H8jj4VNlPmaFI1_6Y';
+    const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    // ------------------------------------
     // 預設連假日期
     const holidays = [
         "2026-01-01", "2026-02-13", "2026-02-14", "2026-02-15", "2026-02-16", 
