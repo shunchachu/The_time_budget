@@ -1,6 +1,6 @@
 document.addEventListener('DOMContentLoaded', () => {
     // --- 新增：初始化 Supabase 客戶端 ---
-    const SUPABASE_URL = 'https://gmvxtxbuttamttqztmif.supabase.co/rest/v1/';
+    const SUPABASE_URL = 'https://gmvxtxbuttamttqztmif.supabase.co';
     const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imdtdnh0eGJ1dHRhbXR0cXp0bWlmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI3MzMyNzAsImV4cCI6MjA5ODMwOTI3MH0.XIrhRTg-Y2iCeuvy3qVhYRijL6H8jj4VNlPmaFI1_6Y';
     const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
     // ------------------------------------
