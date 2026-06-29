@@ -47,8 +47,12 @@ document.addEventListener('DOMContentLoaded', () => {
         const id = Date.now().toString();
         const startStr = formatDate(dates[0]);
         const endStr = formatDate(dates[1]);
+        // 🌟 新增：為資料庫準備的標準 ISO 時間字串
+        const rawStart = dates[0].toISOString();
+        const rawEnd = dates[1].toISOString();
 
-        dateList.push({ id, hours, startStr, endStr, repeatLabel, annualMultiplier });
+        // 🌟 修改：把 rawStart 和 rawEnd 一起存入陣列
+        dateList.push({ id, hours, startStr, endStr, repeatLabel, annualMultiplier, rawStart, rawEnd });
         renderTags();
         fp.clear();
     });
@@ -93,7 +97,8 @@ document.addEventListener('DOMContentLoaded', () => {
     let hasClickedSurprise = false;
 
     // 核心計算邏輯
-    document.getElementById('calc-btn').addEventListener('click', () => {
+    // 🌟 修改：加入 async，讓程式可以「等待」資料庫存檔
+    document.getElementById('calc-btn').addEventListener('click', async () => {
         const name = document.getElementById('person-name').value;
         const currentAge = parseInt(document.getElementById('current-age').value);
         const lifeExpectancy = parseInt(document.getElementById('life-expectancy').value);
@@ -104,7 +109,6 @@ document.addEventListener('DOMContentLoaded', () => {
         if (dateList.length === 0 && !includeWeekend) return alert("請至少新增一個區間，或是勾選週末返鄉！");
 
         const remainingYears = lifeExpectancy - currentAge;
-        
         totalLifetimeHours = 0;
         totalLifetimeTimes = 0;
 
@@ -123,14 +127,10 @@ document.addEventListener('DOMContentLoaded', () => {
         if (includeWeekend) {
             const startVal = document.getElementById('weekend-start').value.split(':');
             const endVal = document.getElementById('weekend-end').value.split(':');
-            
             const startDate = new Date(2000, 0, 1, parseInt(startVal[0]), parseInt(startVal[1]));
             let endDate = new Date(2000, 0, 2, parseInt(endVal[0]), parseInt(endVal[1]));
-            
             if (endDate < startDate) endDate.setDate(endDate.getDate() + 1);
-
             const weekendHours = (endDate - startDate) / (1000 * 60 * 60);
-            
             if (weekendHours > 0) {
                 totalLifetimeHours += Math.floor(weekendHours * 52 * remainingYears);
                 totalLifetimeTimes += 52 * remainingYears;
@@ -140,7 +140,45 @@ document.addEventListener('DOMContentLoaded', () => {
         totalLifetimeDays = Math.floor(totalLifetimeHours / 24);
         hasClickedSurprise = false;
 
-        // 更新結果畫面
+        // 🌟 新增：寫入 Supabase 資料庫的邏輯 🌟
+        try {
+            // 1. 將基本資料寫入 targets 表
+            const { data: targetData, error: targetError } = await supabase
+                .from('targets')
+                .insert([{
+                    name: name,
+                    current_age: currentAge,
+                    life_expectancy: lifeExpectancy,
+                    total_lifetime_hours: totalLifetimeHours
+                }])
+                .select();
+
+            if (targetError) throw targetError;
+
+            // 2. 若有新增連假，將行程關聯到該對象並寫入 events 表
+            if (targetData && targetData.length > 0 && dateList.length > 0) {
+                const targetId = targetData[0].id;
+                const eventsToInsert = dateList.map(item => ({
+                    target_id: targetId,
+                    start_time: item.rawStart,
+                    end_time: item.rawEnd,
+                    repeat_type: item.repeatLabel, 
+                    hours: item.hours
+                }));
+
+                const { error: eventError } = await supabase
+                    .from('events')
+                    .insert(eventsToInsert);
+
+                if (eventError) throw eventError;
+            }
+            console.log("資料成功儲存至 Supabase 保險箱！");
+        } catch (error) {
+            console.error("儲存失敗:", error);
+            // MVP 階段：就算網路不好存檔失敗，還是讓使用者看到計算結果動畫
+        }
+
+        // --- UI 更新與畫面切換邏輯 (與原本一模一樣) ---
         document.getElementById('display-name').textContent = name;
         document.getElementById('surprise-btn').style.display = "block";
         document.getElementById('encouragement-text').innerHTML = "每一次相聚，都在倒數。<br>別讓等待，成為遺憾。";
